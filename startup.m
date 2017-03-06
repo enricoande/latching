@@ -5,6 +5,7 @@ projectRootDir = fileparts(mfilename('fullpath'));
 addpath(fullfile(projectRootDir,'data'),'-end');
 % addpath(fullfile(projectRootDir,'documents'),'-end');
 % addpath(fullfile(projectRootDir,'libraries'),'-end');
+addpath(fullfile(projectRootDir,'functions'),'-end');
 addpath(fullfile(projectRootDir,'models'),'-end');
 addpath(fullfile(projectRootDir,'work'),'-end');
 addpath(fullfile(projectRootDir,'scripts'),'-end');

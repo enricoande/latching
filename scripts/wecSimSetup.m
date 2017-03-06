@@ -19,9 +19,8 @@ wave.dataFile = 'waves.mat';
 ss.dataFile = 'SS.mat';
 
 %% CALCULATION
-wave = updateWaves(wave);
-ss   = updateSS(ss);
-pto  = updatePTO(ss);
+wave     = updateWaves(wave);
+[pto,ss] = updateSS(ss);
  
 %% SUPPORT FUNCTIONS
 % Update structure for wave excitation:
@@ -38,28 +37,21 @@ function waveNew = updateWaves(waveOld)
 end
 
 % Update structure for state-space system and other simulation parameters:
-function ssNew = updateSS(ssOld)
+function [pto,ssNew] = updateSS(ssOld)
     ssNew = ssOld;        % make a copy
     load(ssNew.dataFile); % load state-space system 
 
     % extract the multiplier to get the viscous drag force:
     ssNew.drag = drag;
 
+    % Update the PTO variables:
+    pto.b2 = b2;
+    pto.eff = eff;
+    
     % extract the required matrices - state-space system:
     ssNew.A = A;
     ssNew.B = B;
     
     % Remove the string so that the variable can be passed as a parameter:
     ssNew = rmfield(ssNew,'dataFile');
-end
-
-% Update structure for the PTO block:
-function pto = updatePTO(ss)    
-    load(ss.dataFile); % load the PTO state-space system
-    
-    pto.b2 = b2;
-    pto.eff = eff;
-    
-    % Remove the string so that the variable can be passed as a parameter:
-    pto = rmfield(pto,'dataFile');
 end
