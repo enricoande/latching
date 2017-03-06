@@ -1,24 +1,23 @@
-function plotSimData(logOut)
-% plotSimData.m     E.Anderlini@ed.ac.uk     09/02/2017
+function plotData(data)
+% plotData.m     E.Anderlini@ed.ac.uk     06/03/2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This function plots the results of the latching control
 % applied to the point absorber with an internal mass.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Extract the data:
-t = logOut.getElement('state').Values.Time;
-x = logOut.getElement('state').Values.Data;
-elevation   = logOut.getElement('elevation').Values.Data;
-x1          = x(:,1);
-x2          = x(:,2);
-v1          = x(:,3);
-v2          = x(:,4);
-latch       = logOut.getElement('latch').Values.Data;
-excit       = logOut.getElement('exforce').Values.Data;
-force       = logOut.getElement('PTOforce').Values.Data;
-power       = logOut.getElement('ipower').Values.Data;
-mean_power  = logOut.getElement('mpower').Values.Data;
-energy      = logOut.getElement('energy').Values.Data;
+t          = data.t;
+elevation  = data.el;
+x1         = data.y(:,1);
+x2         = data.y(:,1);
+v1         = data.y(:,2);
+v2         = data.y(:,2);
+latch      = data.l;
+excit      = data.f(:,2);
+force      = data.f(:,1);
+power      = data.p(:,1);
+mean_power = data.p(:,2);
+energy     = data.e;
 
 %% Motions:
 figure;
@@ -61,7 +60,7 @@ grid on;
 subplot(3,1,2);
 plot(t,power,'Color',[0.4660,0.6740,0.1880]);
 hold on;
-plot(t,mean_power,'--','Color',[0.6350,0.0780,0.1840]);  %,'LineWidth',2);
+plot(t,mean_power,'--','Color',[0.6350,0.0780,0.1840]);
 hold off;
 ylabel('$P$ (W)','Interpreter','Latex');
 l=legend('inst.','mean','Location','SouthWest');

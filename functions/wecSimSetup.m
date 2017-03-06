@@ -7,27 +7,21 @@
 
 %% SIMULATION SETUP
 mdl.tStep = 0.001;  % time step length (s)
-mdl.tEnd  = 43400;  % end time (s)
-mdl.tStart = 200;   % time for the start of the power averaging (s)
-mdl.ff = 1/(10*15); % fundamental frequency (Hz) for averaging
+mdl.tEnd  = 200;    % end time (s)
+mdl.tStart = 10;    % time for the start of the power averaging (s)
+mdl.ff = 1/(10*10); % fundamental frequency (Hz) for averaging
 
 %% WEC MODEL PARAMETERS
 % Wave data file:
-wave.dataFile = './input/waves.mat';
+wave.dataFile = 'waves.mat';
 
 % State-space System Matrices:
-ss.dataFile = './input/SS.mat';
-
-% PTO Control Parameter:
-pto.dataFile = './input/pto.mat';
-pto.dmp  = 1e04;   % (Ns/m), see Clement & Babarit (2012)
-pto.lat  = (1e05+246192.085)*80;
-pto.eff  = 1;      % PTO efficiency, see Clement & Babarit (2012)
+ss.dataFile = 'SS.mat';
 
 %% CALCULATION
 wave = updateWaves(wave);
-ss   = updateSS(ss,pto);
-pto  = updatePTO(pto);
+ss   = updateSS(ss);
+pto  = updatePTO(ss);
  
 %% SUPPORT FUNCTIONS
 % Update structure for wave excitation:
@@ -44,7 +38,7 @@ function waveNew = updateWaves(waveOld)
 end
 
 % Update structure for state-space system and other simulation parameters:
-function ssNew = updateSS(ssOld,pto)
+function ssNew = updateSS(ssOld)
     ssNew = ssOld;        % make a copy
     load(ssNew.dataFile); % load state-space system 
 
@@ -54,25 +48,18 @@ function ssNew = updateSS(ssOld,pto)
     % extract the required matrices - state-space system:
     ssNew.A = A;
     ssNew.B = B;
-    ssNew.C = eye(length(A));      %C;
-    ssNew.D = zeros(size(B));      %D;
     
     % Remove the string so that the variable can be passed as a parameter:
     ssNew = rmfield(ssNew,'dataFile');
 end
 
 % Update structure for the PTO block:
-function ptoNew = updatePTO(ptoOld)
-    ptoNew = ptoOld;       % make a copy
+function pto = updatePTO(ss)    
+    load(ss.dataFile); % load the PTO state-space system
     
-    load(ptoOld.dataFile); % load the PTO state-space system
-    
-    % create the matrices for the calculation of the damping coefficients:
-    ptoNew.A = Ad;
-    ptoNew.B = Bd;
-    ptoNew.C = Cd;
-    ptoNew.D = Dd;
+    pto.b2 = b2;
+    pto.eff = eff;
     
     % Remove the string so that the variable can be passed as a parameter:
-    ptoNew = rmfield(ptoNew,'dataFile');
+    pto = rmfield(pto,'dataFile');
 end

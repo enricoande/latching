@@ -9,10 +9,14 @@
 % * duration of the averaging period (from v=0 to v=0);
 % * time from start to peak of the excitation force;
 % * latched mode duration;
-% * x amplitude;
-% * v amplitude;
-% * root mean squared x;
-% * root mean squared v;
+% * x1 amplitude;
+% * x1 amplitude;
+% * v1 amplitude;
+% * v2 amplitude;
+% * root mean squared x1;
+% * root mean squared x2;
+% * root mean squared v1;
+% * root mean squared v2;
 % * mean generated power.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -73,6 +77,7 @@ sout = sim(sfile,'StopTime',num2str(mdl.tEnd));
 logsout = sout.get('logsout');
 t = logsout.getElement('state').Values.Time;
 y = logsout.getElement('state').Values.Data;
+lt = logsout.getElement('latch').Values.Data;
 f = [logsout.getElement('PTOforce').Values.Data,logsout.getElement('exforce').Values.Data];
 el = logsout.getElement('elevation').Values.Data;
 p = [logsout.getElement('ipower').Values.Data,logsout.getElement('mpower').Values.Data];
@@ -86,7 +91,7 @@ e = round(tNow/mdl.tStep)+1;
 % Accumulate data:
 data.t(s:e)   = t;
 data.y(s:e,:) = y;
-data.l(s:e,:) = l*ones(length(t),1);    
+data.l(s:e,:) = lt;    
 data.f(s:e,:) = f;
 data.el(s:e)  = el; 
 data.p(s:e,:) = p;
@@ -95,7 +100,8 @@ data.e(s:e)   = en;
 % Store data required for machine learning analysis:
 [m,i] = max(abs(f(:,2)));
 store = [tNow,max(abs(el)),m,rms(f(:,2)),t(end)-t(1),t(i)-t(1),l,...
-max(abs(y(:,1))),max(abs(y(:,2))),rms(y(:,1)),rms(y(:,2)),mean(p(:,1))];
+max(abs(y(:,1))),max(abs(y(:,2))),max(abs(y(:,3))),max(abs(y(:,4))),...
+rms(y(:,1)),rms(y(:,2)),rms(y(:,3)),rms(y(:,4)),mean(p(:,1))];
 
 %% Loop until done:
 while tNow < mdl.tEnd
@@ -103,15 +109,15 @@ while tNow < mdl.tEnd
     assignin('base', 'xFinal', sout.get('xFinal'));
     
     %% Find the optimal PTO coefficients:
-    % Specify the limits of the PTO coefficients:
-    lb = 0;
-    ub = 5; 
-    % Set the initial values:
-    x0 = 0;
-    % Find the optimal PTO coefficients:
-    fun = @(x)cost(sfile,tNow,xFinal,mdl,wave,ss,pto,x);
-    options = optimoptions('fmincon','Display', 'off');
-    l = fmincon(fun,x0,[],[],[],[],lb,ub,[],options);
+%     % Specify the limits of the PTO coefficients:
+%     lb = 0;
+%     ub = 5; 
+%     % Set the initial values:
+%     x0 = 0;
+%     % Find the optimal PTO coefficients:
+%     fun = @(x)cost(sfile,tNow,xFinal,mdl,wave,ss,pto,x);
+%     options = optimoptions('fmincon','Display', 'off');
+%     l = fmincon(fun,x0,[],[],[],[],lb,ub,[],options);
 
     %% Continue marching along:
     % Activate the stop block:
@@ -126,6 +132,7 @@ while tNow < mdl.tEnd
     logsout = sout.get('logsout');
     t = logsout.getElement('state').Values.Time;
     y = logsout.getElement('state').Values.Data;
+    lt = logsout.getElement('latch').Values.Data;
     f = [logsout.getElement('PTOforce').Values.Data,logsout.getElement('exforce').Values.Data];
     el = logsout.getElement('elevation').Values.Data;
     p = [logsout.getElement('ipower').Values.Data,logsout.getElement('mpower').Values.Data];
@@ -139,7 +146,7 @@ while tNow < mdl.tEnd
     % Accumulate data:
     data.t(s:e)   = t;
     data.y(s:e,:) = y;
-    data.c(s:e,:) = l*ones(length(t),1);    
+    data.c(s:e,:) = lt;    
     data.f(s:e,:) = f;
     data.el(s:e)  = el; 
     data.p(s:e,:) = p;
@@ -148,7 +155,8 @@ while tNow < mdl.tEnd
     % Store data required for machine learning analysis:
     [m,i] = max(abs(f(:,2)));
     store = [tNow,max(abs(el)),m,rms(f(:,2)),t(end)-t(1),t(i)-t(1),l,...
-    max(abs(y(:,1))),max(abs(y(:,2))),rms(y(:,1)),rms(y(:,2)),mean(p(:,1))];
+    max(abs(y(:,1))),max(abs(y(:,2))),max(abs(y(:,3))),max(abs(y(:,4))),...
+    rms(y(:,1)),rms(y(:,2)),rms(y(:,3)),rms(y(:,4)),mean(p(:,1))];
 end
 
 %% Close the Simulink file:
