@@ -74,8 +74,7 @@
 #define RW_B32 25
 #define RW_B41 26
 #define RW_B42 27
-#define RW_F   28 // PTO force
-#define RW_N   29 // size of real work vector
+#define RW_N   28 // size of real work vector
 
 // integer work vector indices
 #define IW_N   0 // size of integer work vector
@@ -90,9 +89,7 @@
 #define   O_STSIZE C_N   // states (m and m/s)
 #define O_LON  1         // latch state port #
 #define   O_LONSIZE  1   // latch state (on/off)
-#define O_FPTO 2         // PTO force port
-#define   O_FPTOSIZE 1   // PTO force (N)
-#define O_N    3         // # of output ports
+#define O_N    2         // # of output ports
 
 // ************************************************************************
 // mdlCheckParameters: Method for checking parameter data types and sizes.
@@ -191,7 +188,6 @@ static void mdlInitializeSizes(SimStruct *S)
   // specify output port widths
   ssSetOutputPortWidth(S, O_ST , O_STSIZE) ; 
   ssSetOutputPortWidth(S, O_LON, O_LONSIZE);   
-  ssSetOutputPortWidth(S, O_FPTO, O_FPTOSIZE); 
   
   // setup work vectors
   // EA
@@ -282,7 +278,6 @@ static void mdlInitializeConditions(SimStruct *S)
   rw[RW_B32] = B[2][1];
   rw[RW_B41] = B[3][0];
   rw[RW_B42] = B[3][1];
-  rw[RW_F] = 0;
   
   ssSetSimStateCompliance(S,USE_DEFAULT_SIM_STATE);
 }
@@ -296,7 +291,6 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   // set a pointers to the outputs
   real_T *ySt   = ssGetOutputPortSignal(S,O_ST );  // states
   real_T *yLOn  = ssGetOutputPortSignal(S,O_LON);  // latch state (on/off)
-  real_T *yF    = ssGetOutputPortSignal(S,O_FPTO); // PTO force (N)
   
   // set a point to the 'next latch time' parameter
   const real_T *dltc = mxGetPr(ssGetSFcnParam(S,P_L)); 
@@ -304,19 +298,13 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   // set a pointer to the continous state vector
   real_T *x  = ssGetContStates(S);
   
-  // set a pointer to the real work vector
-  real_T *rw = ssGetRWork(S);
-  
   int_T i; // counter
     
   // toss continuous states to the output port
   for(i=0;i<C_N;i++) ySt[i] = x[i];
   
   // toss the latch state to the output port, as a real_T
-  *yLOn = (real_T)(ssGetT(S) < *dltc); 
-  
-  // toss the PTO force to the output port
-  *yF = rw[RW_F];
+  *yLOn = (real_T)(ssGetT(S) < *dltc);
 }
 
 // ************************************************************************
@@ -346,7 +334,7 @@ static void mdlDerivatives(SimStruct *S)
   // set a pointer to the wave excitation
   InputRealPtrsType fEx = ssGetInputPortRealSignalPtrs(S,I_F); 
   
-  fPTO = ((real_T)(ssGetT(S)<*l))*x[C_X2D];
+  fPTO = (ssGetT(S)<*l)*x[C_X2D];
   
 //   // Neater, but slower solution:
 //   //snatch and map all the needed parameters  
@@ -385,9 +373,6 @@ static void mdlDerivatives(SimStruct *S)
 //   // process the latching control law
 //   if (ssGetT(S) < *l)
 //     dx[C_X2] = dx[C_X2D] = 0.0; // arrest relative motion of m2 
-  
-  // Update the PTO force:
-  rw[RW_F] = fPTO;
 }
 #endif
 

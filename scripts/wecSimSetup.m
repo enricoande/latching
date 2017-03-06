@@ -45,7 +45,8 @@ function [pto,ssNew] = updateSS(ssOld)
     ssNew.drag = drag;
 
     % Update the PTO variables:
-    pto.b2 = b2;
+    pto.b2  = b2;
+    pto.G   = G;
     pto.eff = eff;
     
     % extract the required matrices - state-space system:

@@ -44,16 +44,19 @@ wecSimSetup;
 n = mdl.tEnd/mdl.tStep+1;
 % Initialize a structure for holding accumulated data:
 data.t  = nan(n,1);    % time (s)
-data.y  = nan(n,6);    % states
-data.l  = nan(n,2);    % latching signal
+data.y  = nan(n,8);    % states
+data.l  = nan(n,1);    % latching signal
 data.f  = nan(n,2);    % PTO & wave excitation force (N)
 data.el = nan(n,1);    % wave elevation (m)
 data.p  = nan(n,2);    % instantaneous & mean power (W)
 data.e  = nan(n,1);    % energy (J)
 
+% Initial conditions:
+ics = zeros(8,1);
 % Initialize the latched mode duration:
-l = 0;
-
+l = 1;
+% Initialize the delatching time:
+nextDelatchTime = l;
 % Activate the stop block:
 c = 0.1;
 
@@ -75,10 +78,10 @@ sout = sim(sfile,'StopTime',num2str(mdl.tEnd));
 
 % Snatch data:
 logsout = sout.get('logsout');
-t = logsout.getElement('state').Values.Time;
-y = logsout.getElement('state').Values.Data;
+t  = logsout.getElement('state').Values.Time;
+y  = logsout.getElement('state').Values.Data;
 lt = logsout.getElement('latch').Values.Data;
-f = [logsout.getElement('PTOforce').Values.Data,logsout.getElement('exforce').Values.Data];
+f  = logsout.getElement('exforce').Values.Data;
 el = logsout.getElement('elevation').Values.Data;
 p = [logsout.getElement('ipower').Values.Data,logsout.getElement('mpower').Values.Data];
 en = logsout.getElement('energy').Values.Data;
@@ -92,16 +95,16 @@ e = round(tNow/mdl.tStep)+1;
 data.t(s:e)   = t;
 data.y(s:e,:) = y;
 data.l(s:e,:) = lt;    
-data.f(s:e,:) = f;
+data.f(s:e,2) = f;
 data.el(s:e)  = el; 
 data.p(s:e,:) = p;
 data.e(s:e)   = en;  
 
 % Store data required for machine learning analysis:
-[m,i] = max(abs(f(:,2)));
-store = [tNow,max(abs(el)),m,rms(f(:,2)),t(end)-t(1),t(i)-t(1),l,...
-max(abs(y(:,1))),max(abs(y(:,2))),max(abs(y(:,3))),max(abs(y(:,4))),...
-rms(y(:,1)),rms(y(:,2)),rms(y(:,3)),rms(y(:,4)),mean(p(:,1))];
+[m,i] = max(abs(f));
+store = [tNow,max(abs(el)),m,rms(f),t(end)-t(1),t(i)-t(1),l,...
+    max(abs(y(:,1))),max(abs(y(:,2))),max(abs(y(:,3))),max(abs(y(:,4))),...
+    rms(y(:,1)),rms(y(:,2)),rms(y(:,3)),rms(y(:,4)),mean(p(:,1))];
 
 %% Loop until done:
 while tNow < mdl.tEnd
@@ -120,6 +123,8 @@ while tNow < mdl.tEnd
 %     l = fmincon(fun,x0,[],[],[],[],lb,ub,[],options);
 
     %% Continue marching along:
+    % Update the delatching time:
+    nextDelatchTime = tNow+l;
     % Activate the stop block:
     c = 0.1;
     % Update parameters and run:
@@ -130,10 +135,10 @@ while tNow < mdl.tEnd
 
     % Snatch data:
     logsout = sout.get('logsout');
-    t = logsout.getElement('state').Values.Time;
-    y = logsout.getElement('state').Values.Data;
+    t  = logsout.getElement('state').Values.Time;
+    y  = logsout.getElement('state').Values.Data;
     lt = logsout.getElement('latch').Values.Data;
-    f = [logsout.getElement('PTOforce').Values.Data,logsout.getElement('exforce').Values.Data];
+    f  = logsout.getElement('exforce').Values.Data;
     el = logsout.getElement('elevation').Values.Data;
     p = [logsout.getElement('ipower').Values.Data,logsout.getElement('mpower').Values.Data];
     en = logsout.getElement('energy').Values.Data;
@@ -146,17 +151,18 @@ while tNow < mdl.tEnd
     % Accumulate data:
     data.t(s:e)   = t;
     data.y(s:e,:) = y;
-    data.c(s:e,:) = lt;    
-    data.f(s:e,:) = f;
+    data.l(s:e,:) = lt;    
+    data.f(s:e,2) = f;
     data.el(s:e)  = el; 
     data.p(s:e,:) = p;
     data.e(s:e)   = en;
 
     % Store data required for machine learning analysis:
-    [m,i] = max(abs(f(:,2)));
-    store = [tNow,max(abs(el)),m,rms(f(:,2)),t(end)-t(1),t(i)-t(1),l,...
-    max(abs(y(:,1))),max(abs(y(:,2))),max(abs(y(:,3))),max(abs(y(:,4))),...
-    rms(y(:,1)),rms(y(:,2)),rms(y(:,3)),rms(y(:,4)),mean(p(:,1))];
+    [m,i] = max(abs(f));
+    store = [tNow,max(abs(el)),m,rms(f),t(end)-t(1),t(i)-t(1),l,...
+        max(abs(y(:,1))),max(abs(y(:,2))),max(abs(y(:,3))),...
+        max(abs(y(:,4))),rms(y(:,1)),rms(y(:,2)),rms(y(:,3)),...
+        rms(y(:,4)),mean(p(:,1))];
 end
 
 %% Close the Simulink file:
@@ -165,5 +171,7 @@ close_system(sfile);
 toc;
 
 %% Post-processing:
+% Calculate the PTO force:
+data.f(:,1) = data.y(:,4).*(pto.b2+data.l*pto.G);
 % Plot the results
 plotData(data);

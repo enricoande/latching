@@ -65,7 +65,7 @@ A(5:end,5:end) = sys.a;
 
 % Complete the B matrix:
 B(3,1) = 1/m1minf;
-B(3,2) = 1/m1minf;
+B(3,2) = G/m1minf;
 B(4,1) = -1/m1minf;
 B(4,2) = -G*m1m2minf/(m1minf*m2);
 
@@ -76,5 +76,5 @@ B(4,2) = -G*m1m2minf/(m1minf*m2);
 % Dd = zeros(2);
 
 %% Store the data to file:
-save('../data/ss.mat','A','B','C','D','drag','eff','b2');
+save('../data/ss.mat','A','B','C','D','drag','eff','b2','G');
 % save('input/pto.mat','Ad','Bd','Cd','Dd');
