@@ -6,7 +6,9 @@ function pm = cost(sfile,tNow,xFinal,mdl,wave,ss,pto,l)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialize run:
-assignin('base','l',l);
+nextDelatchTime = tNow+l;
+assignin('base','c',2);
+assignin('base','nextDelatchTime',nextDelatchTime);
 set_param(sfile,'SimulationCommand','update');     
 
 %% Run Simulink:

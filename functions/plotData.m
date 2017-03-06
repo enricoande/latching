@@ -9,9 +9,9 @@ function plotData(data)
 t          = data.t;
 elevation  = data.el;
 x1         = data.y(:,1);
-x2         = data.y(:,1);
-v1         = data.y(:,2);
-v2         = data.y(:,2);
+x2         = data.y(:,2);
+v1         = data.y(:,3);
+v2         = data.y(:,4);
 latch      = data.l;
 excit      = data.f(:,2);
 force      = data.f(:,1);

@@ -6,9 +6,9 @@
 % devices', Philosophical Transactions of the Royal Society A, 370.
 
 %% SIMULATION SETUP
-mdl.tStep = 0.001;  % time step length (s)
-mdl.tEnd  = 200;    % end time (s)
-mdl.tStart = 10;    % time for the start of the power averaging (s)
+mdl.tStep = 0.005;  % time step length (s)
+mdl.tEnd  = 400;    % end time (s)
+mdl.tStart = 200;   % time for the start of the power averaging (s)
 mdl.ff = 1/(10*10); % fundamental frequency (Hz) for averaging
 
 %% WEC MODEL PARAMETERS

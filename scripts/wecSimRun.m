@@ -112,15 +112,17 @@ while tNow < mdl.tEnd
     assignin('base', 'xFinal', sout.get('xFinal'));
     
     %% Find the optimal PTO coefficients:
-%     % Specify the limits of the PTO coefficients:
-%     lb = 0;
-%     ub = 5; 
-%     % Set the initial values:
-%     x0 = 0;
-%     % Find the optimal PTO coefficients:
-%     fun = @(x)cost(sfile,tNow,xFinal,mdl,wave,ss,pto,x);
-%     options = optimoptions('fmincon','Display', 'off');
-%     l = fmincon(fun,x0,[],[],[],[],lb,ub,[],options);
+    if tNow>mdl.tStart
+        % Specify the limits of the PTO coefficients:
+        lb = 0;
+        ub = 5; 
+        % Set the initial values:
+        x0 = 0;
+        % Find the optimal PTO coefficients:
+        fun = @(x)cost(sfile,tNow,xFinal,mdl,wave,ss,pto,x);
+        options = optimoptions('fmincon','Display', 'off');
+        l = fmincon(fun,x0,[],[],[],[],lb,ub,[],options);
+    end
 
     %% Continue marching along:
     % Update the delatching time:
