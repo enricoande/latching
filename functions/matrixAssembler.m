@@ -38,6 +38,8 @@ G = (m2+minf)*80;   % (Ns/m)
 
 drag = 0.5*CD*2*R*rho;% (kg/m2)
 
+eff = 1;            % efficiency
+
 m1minf = m1+minf;
 m1m2minf = m1+m2+minf;
 
@@ -65,7 +67,7 @@ A(5:end,5:end) = sys.a;
 B(3,1) = 1/m1minf;
 B(3,2) = 1/m1minf;
 B(4,1) = -1/m1minf;
-B(4,2) = -m1m2minf/(m1minf*m2);
+B(4,2) = -G*m1m2minf/(m1minf*m2);
 
 % % For the time delay on the PTO and brake:
 % Ad = [-1/tl,0;0,-1/ta];
@@ -74,5 +76,5 @@ B(4,2) = -m1m2minf/(m1minf*m2);
 % Dd = zeros(2);
 
 %% Store the data to file:
-save('../data/ss.mat','A','B','C','D','drag');
+save('../data/ss.mat','A','B','C','D','drag','eff','b2');
 % save('input/pto.mat','Ad','Bd','Cd','Dd');

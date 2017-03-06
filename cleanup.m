@@ -13,5 +13,4 @@ rmpath(fullfile(projectRootDir,'scripts'));
 Simulink.fileGenControl('reset');
 
 % leave no trace...
-clear projectRootDir
-
+clear projectRootDir;

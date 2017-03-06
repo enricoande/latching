@@ -1,6 +1,6 @@
-% wecSimRun.m     E.Anderlini@ed.ac.uk     02/03/2017
+% wecSimRun.m     E.Anderlini@ed.ac.uk     06/03/2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This file is used to run reactive control of the point absorber.
+% This file is used to run latching control of the point absorber.
 % At the end of each half of a wave cycle, the following data are stored:
 % * time stamp;
 % * wave amplitude;
@@ -8,8 +8,7 @@
 % * root mean squared excitation force;
 % * duration of the averaging period (from v=0 to v=0);
 % * time from start to peak of the excitation force;
-% * PTO damping coefficient;
-% * PTO stiffness coefficient;
+% * latched mode duration;
 % * x amplitude;
 % * v amplitude;
 % * root mean squared x;
@@ -20,9 +19,6 @@
 %% Clean Up:
 clearvars;
 close all;
-addpath('../functions');
-addpath('../wavegenerator');
-addpath('../.');
 
 %% Suppress Warning
 warning('off', 'Simulink:SimState:SimStateParameterChecksumMisMatch');
@@ -45,15 +41,14 @@ n = mdl.tEnd/mdl.tStep+1;
 % Initialize a structure for holding accumulated data:
 data.t  = nan(n,1);    % time (s)
 data.y  = nan(n,6);    % states
-data.c  = nan(n,2);    % PTO damping & stiffness coefficients
+data.l  = nan(n,2);    % latching signal
 data.f  = nan(n,2);    % PTO & wave excitation force (N)
 data.el = nan(n,1);    % wave elevation (m)
 data.p  = nan(n,2);    % instantaneous & mean power (W)
 data.e  = nan(n,1);    % energy (J)
 
-% Initialize the PTO damping and stiffness coefficients:
-b = 1e04;
-k = -1e04;
+% Initialize the latched mode duration:
+l = 0;
 
 % Activate the stop block:
 c = 0.1;
@@ -75,7 +70,7 @@ set_param(sfile,'SimulationCommand','update');
 sout = sim(sfile,'StopTime',num2str(mdl.tEnd));
 
 % Snatch data:
-logsout    = sout.get('logsout');
+logsout = sout.get('logsout');
 t = logsout.getElement('state').Values.Time;
 y = logsout.getElement('state').Values.Data;
 f = [logsout.getElement('PTOforce').Values.Data,logsout.getElement('exforce').Values.Data];
@@ -91,7 +86,7 @@ e = round(tNow/mdl.tStep)+1;
 % Accumulate data:
 data.t(s:e)   = t;
 data.y(s:e,:) = y;
-data.c(s:e,:) = [b*ones(length(t),1),k*ones(length(t),1)];    
+data.l(s:e,:) = l*ones(length(t),1);    
 data.f(s:e,:) = f;
 data.el(s:e)  = el; 
 data.p(s:e,:) = p;
@@ -99,7 +94,7 @@ data.e(s:e)   = en;
 
 % Store data required for machine learning analysis:
 [m,i] = max(abs(f(:,2)));
-store = [tNow,max(abs(el)),m,rms(f(:,2)),t(end)-t(1),t(i)-t(1),b,k,...
+store = [tNow,max(abs(el)),m,rms(f(:,2)),t(end)-t(1),t(i)-t(1),l,...
 max(abs(y(:,1))),max(abs(y(:,2))),rms(y(:,1)),rms(y(:,2)),mean(p(:,1))];
 
 %% Loop until done:
@@ -109,19 +104,16 @@ while tNow < mdl.tEnd
     
     %% Find the optimal PTO coefficients:
     % Specify the limits of the PTO coefficients:
-    lb = [0,-1e06];
-    ub = [1e06,0]; 
+    lb = 0;
+    ub = 5; 
     % Set the initial values:
-    x0 = zeros(1,2);
+    x0 = 0;
     % Find the optimal PTO coefficients:
     fun = @(x)cost(sfile,tNow,xFinal,mdl,wave,ss,pto,x);
     options = optimoptions('fmincon','Display', 'off');
-    coeffs = fmincon(fun,x0,[],[],[],[],lb,ub,[],options);
+    l = fmincon(fun,x0,[],[],[],[],lb,ub,[],options);
 
     %% Continue marching along:
-    % Specify PTO damping and stiffness coefficients:
-    b = coeffs(1);
-    k = coeffs(2);
     % Activate the stop block:
     c = 0.1;
     % Update parameters and run:
@@ -131,7 +123,7 @@ while tNow < mdl.tEnd
         'LoadInitialState','on','InitialState', 'xFinal');
 
     % Snatch data:
-    logsout    = sout.get('logsout');
+    logsout = sout.get('logsout');
     t = logsout.getElement('state').Values.Time;
     y = logsout.getElement('state').Values.Data;
     f = [logsout.getElement('PTOforce').Values.Data,logsout.getElement('exforce').Values.Data];
@@ -147,7 +139,7 @@ while tNow < mdl.tEnd
     % Accumulate data:
     data.t(s:e)   = t;
     data.y(s:e,:) = y;
-    data.c(s:e,:) = [b*ones(length(t),1),k*ones(length(t),1)];    
+    data.c(s:e,:) = l*ones(length(t),1);    
     data.f(s:e,:) = f;
     data.el(s:e)  = el; 
     data.p(s:e,:) = p;
@@ -155,7 +147,7 @@ while tNow < mdl.tEnd
 
     % Store data required for machine learning analysis:
     [m,i] = max(abs(f(:,2)));
-    store = [tNow,max(abs(el)),m,rms(f(:,2)),t(end)-t(1),t(i)-t(1),b,k,...
+    store = [tNow,max(abs(el)),m,rms(f(:,2)),t(end)-t(1),t(i)-t(1),l,...
     max(abs(y(:,1))),max(abs(y(:,2))),rms(y(:,1)),rms(y(:,2)),mean(p(:,1))];
 end
 
