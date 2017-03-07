@@ -1,4 +1,4 @@
-% matrixAssembler.m      E.Anderlini@ed.ac.uk     11/01/2017
+% matrixAssembler.m      E.Anderlini@ed.ac.uk     07/03/2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This script is used to assemble the required state-space matrices.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,3 +78,14 @@ B(4,2) = -G*m1m2minf/(m1minf*m2);
 %% Store the data to file:
 save('../data/ss.mat','A','B','C','D','drag','eff','b2','G');
 % save('input/pto.mat','Ad','Bd','Cd','Dd');
+
+%% Assembling the state-space matrices for the backward integration:
+% A_lambda:
+Al = -A';
+% B_lambda:
+Bl = zeros(4+n,3);
+Bl(4,1) = -G/m1minf;
+Bl(4,2) = G*m1m2minf/(m1minf*m2);
+Bl(4,3) = -2*b2;
+
+save('../data/SSl.mat','Al','Bl');

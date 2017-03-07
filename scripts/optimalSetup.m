@@ -1,7 +1,7 @@
-% wecSimSetup.m      E.Anderlini@ed.ac.uk     07/03/2017
+% optimalSetup.m      E.Anderlini@ed.ac.uk     07/03/2017
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This script initializes the parameters required for the simulation of the
-% point absorber with internal mass and latching control.
+% point absorber with internal mass and optimal latching control.
 %
 % N.B.: The model has been generated using the parameters given in:
 % Clement and Babarit (2012). 'Discrete control of resonant wave energy 
@@ -14,19 +14,19 @@
 %% SIMULATION SETUP
 mdl.tStep = 0.005;  % time step length (s)
 mdl.tEnd  = 400;    % end time (s)
-mdl.tStart = 200;   % time for the start of the power averaging (s)
 
 %% WEC MODEL PARAMETERS
 % Wave data file:
 wave.dataFile = 'waves.mat';
 
 % State-space System Matrices:
-ss.dataFile = 'SS.mat';
+ss.dataFile1 = 'SS.mat';
+ss.dataFile2 = 'SSl.mat';
 
 %% CALCULATION
 wave     = updateWaves(wave);
 [pto,ss] = updateSS(ss);
- 
+
 %% SUPPORT FUNCTIONS
 % Update structure for wave excitation:
 function waveNew = updateWaves(waveOld)
@@ -44,20 +44,27 @@ end
 % Update structure for state-space system and other simulation parameters:
 function [pto,ssNew] = updateSS(ssOld)
     ssNew = ssOld;        % make a copy
-    load(ssNew.dataFile); % load state-space system 
-
-    % extract the multiplier to get the viscous drag force:
-    ssNew.drag = drag;
-
-    % Update the PTO variables:
+    load(ssNew.dataFile1); % load state-space system for state vector
+    load(ssNew.dataFile2); % load state-space system for costate vector
+    
+    % Generate the pto structure:
+    pto.eff = eff;
     pto.b2  = b2;
     pto.G   = G;
-    pto.eff = eff;
     
-    % extract the required matrices - state-space system:
+    % extract the required matrices - state:
     ssNew.A = A;
     ssNew.B = B;
+    ssNew.C = eye(length(A));
+    ssNew.D = zeros(size(B));
     
-    % Remove the string so that the variable can be passed as a parameter:
-    ssNew = rmfield(ssNew,'dataFile');
+    % extract the required matrices - costate:
+    ssNew.Al = Al;
+    ssNew.Bl = Bl;
+    ssNew.Cl = eye(length(Al));
+    ssNew.Dl = zeros(size(Bl));
+    
+    % Remove the strings so that the variable can be passed as a parameter:
+    ssNew = rmfield(ssNew,'dataFile1');
+    ssNew = rmfield(ssNew,'dataFile2');
 end

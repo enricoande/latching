@@ -16,7 +16,7 @@ sout = sim(sfile,'StopTime',num2str(tNow+15),...
              'LoadInitialState','on','InitialState','xFinal');
 % Extract the instantaneous power:
 logsout = sout.get('logsout');
-p = logsout.getElement('ipower').Values.Data;
+p = logsout.getElement('power').Values.Data;
 
 %% Get the mean generated power (as cost):
 pm = -mean(p);

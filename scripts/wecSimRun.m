@@ -18,6 +18,9 @@
 % * root mean squared v1;
 % * root mean squared v2;
 % * mean generated power.
+%
+% This code has been adapted from the code by Gordon Parker at Michigan
+% Technological University.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Clean Up:
@@ -33,7 +36,7 @@ warning('off', 'Simulink:SimState:SimStateParameterChecksumMisMatch');
 % % Generate the waves
 % wavegen(wave);
 % As an alternative, load pregenerated data:
-load('waves.mat');
+% load('waves.mat');
 % % Uncomment for debugging:
 % plotWaves(time,elev,excit);
 
@@ -83,7 +86,7 @@ y  = logsout.getElement('state').Values.Data;
 lt = logsout.getElement('latch').Values.Data;
 f  = logsout.getElement('exforce').Values.Data;
 el = logsout.getElement('elevation').Values.Data;
-p = [logsout.getElement('ipower').Values.Data,logsout.getElement('mpower').Values.Data];
+p =  logsout.getElement('power').Values.Data;
 en = logsout.getElement('energy').Values.Data;
 
 s = 1;
@@ -97,7 +100,7 @@ data.y(s:e,:) = y;
 data.l(s:e,:) = lt;    
 data.f(s:e,2) = f;
 data.el(s:e)  = el; 
-data.p(s:e,:) = p;
+data.p(s:e,1) = p;
 data.e(s:e)   = en;  
 
 % Store data required for machine learning analysis:
@@ -112,17 +115,17 @@ while tNow < mdl.tEnd
     assignin('base', 'xFinal', sout.get('xFinal'));
     
     %% Find the optimal PTO coefficients:
-    if tNow>mdl.tStart
-        % Specify the limits of the PTO coefficients:
-        lb = 0;
-        ub = 5; 
-        % Set the initial values:
-        x0 = 0;
-        % Find the optimal PTO coefficients:
-        fun = @(x)cost(sfile,tNow,xFinal,mdl,wave,ss,pto,x);
-        options = optimoptions('fmincon','Display', 'off');
-        l = fmincon(fun,x0,[],[],[],[],lb,ub,[],options);
-    end
+%     if tNow>mdl.tStart
+%         % Specify the limits of the PTO coefficients:
+%         lb = 0;
+%         ub = 5; 
+%         % Set the initial values:
+%         x0 = 0;
+%         % Find the optimal PTO coefficients:
+%         fun = @(x)cost(sfile,tNow,xFinal,mdl,wave,ss,pto,x);
+%         options = optimoptions('fmincon','Display', 'off');
+%         l = fmincon(fun,x0,[],[],[],[],lb,ub,[],options);
+%     end
 
     %% Continue marching along:
     % Update the delatching time:
@@ -142,7 +145,7 @@ while tNow < mdl.tEnd
     lt = logsout.getElement('latch').Values.Data;
     f  = logsout.getElement('exforce').Values.Data;
     el = logsout.getElement('elevation').Values.Data;
-    p = [logsout.getElement('ipower').Values.Data,logsout.getElement('mpower').Values.Data];
+    p  = logsout.getElement('power').Values.Data;
     en = logsout.getElement('energy').Values.Data;
 
     s = e+1;
@@ -156,7 +159,7 @@ while tNow < mdl.tEnd
     data.l(s:e,:) = lt;    
     data.f(s:e,2) = f;
     data.el(s:e)  = el; 
-    data.p(s:e,:) = p;
+    data.p(s:e,1) = p;
     data.e(s:e)   = en;
 
     % Store data required for machine learning analysis:
@@ -175,5 +178,9 @@ toc;
 %% Post-processing:
 % Calculate the PTO force:
 data.f(:,1) = data.y(:,4).*(pto.b2+data.l*pto.G);
+% Calculate the mean power:
+b = (1/20*mdl.tStep)*ones(1,20/mdl.tStep);
+a = 1;
+data.p(:,2) = filter(b,a,data.p(:,1));
 % Plot the results
 plotData(data);
