@@ -7,12 +7,12 @@ function pm = cost(sfile,tNow,xFinal,mdl,wave,ss,pto,l)
 
 %% Initialize run:
 nextDelatchTime = tNow+l;
-assignin('base','c',2);
+% assignin('base','c',2);
 assignin('base','nextDelatchTime',nextDelatchTime);
 set_param(sfile,'SimulationCommand','update');     
 
 %% Run Simulink:
-sout = sim(sfile,'StopTime',num2str(tNow+15),...
+sout = sim(sfile,'StopTime',num2str(tNow+10),...
              'LoadInitialState','on','InitialState','xFinal');
 % Extract the instantaneous power:
 logsout = sout.get('logsout');
