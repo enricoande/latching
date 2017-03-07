@@ -63,6 +63,11 @@ nextDelatchTime = l;
 % Activate the stop block:
 c = 0.1;
 
+% Initialize the minimization vector:
+L=0.1:0.1:3;
+Ll = length(L);
+co = zeros(Ll,1);
+
 tic;
 %% Load the Simulink file:
 % Simulink file:
@@ -115,17 +120,23 @@ while tNow < mdl.tEnd
     assignin('base', 'xFinal', sout.get('xFinal'));
     
     %% Find the optimal PTO coefficients:
-%     if tNow>mdl.tStart
+    if tNow>mdl.tStart
+        for j=1:Ll
+            co(j) = cost(sfile,tNow,xFinal,mdl,wave,ss,pto,L(j));
+        end
+        [~,J] = min(co);
+        l = J*0.1;
+        
 %         % Specify the limits of the PTO coefficients:
 %         lb = 0;
 %         ub = 5; 
 %         % Set the initial values:
-%         x0 = 0;
+%         x0 = ico;
 %         % Find the optimal PTO coefficients:
 %         fun = @(x)cost(sfile,tNow,xFinal,mdl,wave,ss,pto,x);
-%         options = optimoptions('fmincon','Display', 'off');
-%         l = fmincon(fun,x0,[],[],[],[],lb,ub,[],options);
-%     end
+%         %options = optimoptions('fmincon');  %,'Display', 'off');
+%         l = fmincon(fun,x0,[],[],[],[],lb,ub);  %,[],options);
+    end
 
     %% Continue marching along:
     % Update the delatching time:
