@@ -13,7 +13,7 @@
 
 %% SIMULATION SETUP
 mdl.tStep = 0.005;  % time step length (s)
-mdl.tEnd  = 400;    % end time (s)
+mdl.tEnd  = 500;    % end time (s)
 mdl.tStart = 200;   % time for the start of the power averaging (s)
 
 %% WEC MODEL PARAMETERS

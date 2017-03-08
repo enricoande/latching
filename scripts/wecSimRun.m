@@ -60,13 +60,13 @@ ics = zeros(8,1);
 l = 1;
 % Initialize the delatching time:
 nextDelatchTime = l;
-% Activate the stop block:
-c = 0.1;
 
-% Initialize the minimization vector:
-L=0.1:0.1:3;
-Ll = length(L);
-co = zeros(Ll,1);
+% % Initialize the minimization vector:
+% L=0.1:0.1:3;
+% Ll = length(L);
+% co = zeros(Ll,1);
+% Initialize the error flags:
+check = [];
 
 tic;
 %% Load the Simulink file:
@@ -121,31 +121,33 @@ while tNow < mdl.tEnd
     
     %% Find the optimal PTO coefficients:
     if tNow>mdl.tStart
-        for j=1:Ll
-            co(j) = cost(sfile,tNow,xFinal,mdl,wave,ss,pto,L(j));
-        end
-        [~,J] = min(co);
-        l = J*0.1;
+%         for j=1:Ll
+%             co(j) = cost(sfile,tNow,xFinal,mdl,wave,ss,pto,L(j));
+%         end
+%         [~,J] = min(co);
+%         l = J*0.1;
         
 %         % Specify the limits of the PTO coefficients:
 %         lb = 0;
 %         ub = 5; 
-%         % Set the initial values:
-%         x0 = ico;
-%         % Find the optimal PTO coefficients:
-%         fun = @(x)cost(sfile,tNow,xFinal,mdl,wave,ss,pto,x);
-%         %options = optimoptions('fmincon');  %,'Display', 'off');
+        % Set the initial values:
+        x0 = 0.1;
+        % Find the optimal PTO coefficients:
+        fun = @(x)cost(sfile,tNow,xFinal,mdl,wave,ss,pto,x);
+%         options = optimoptions('fmincon','DiffMinChange',mdl.tStep,...
+%             'Display', 'off');
 %         l = fmincon(fun,x0,[],[],[],[],lb,ub);  %,[],options);
+        [l,~,ef] = fminsearch(fun,x0);
+        % Collect the error flags:
+        check = [check;ef];
     end
 
-    %% Continue marching along:
+    %% Continue marching along:   
     % Update the delatching time:
     nextDelatchTime = tNow+l;
-    % Activate the stop block:
-    c = 0.1;
     % Update parameters and run:
     set_param(sfile,'SimulationCommand','update'); 
-    
+
     sout = sim(sfile,'StopTime',num2str(mdl.tEnd),...
         'LoadInitialState','on','InitialState', 'xFinal');
 
@@ -187,6 +189,11 @@ close_system(sfile);
 toc;
 
 %% Post-processing:
+% Check if the optimization has converged:
+if sum(check)~=length(check)
+    disp('Warning: fminsearch has not converged in at least one instance');
+end
+
 % Calculate the PTO force:
 data.f(:,1) = data.y(:,4).*(pto.b2+data.l*pto.G);
 % Calculate the mean power:
